@@ -65,6 +65,9 @@ use crate::web_resize::{CanvasParentResizeEventChannel, CanvasParentResizePlugin
 #[cfg(target_os = "android")]
 pub static ANDROID_APP: std::sync::OnceLock<AndroidApp> = std::sync::OnceLock::new();
 
+/// Set this flag to `true` to prohibit bevy updates
+pub static PAUSE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 /// A [`Plugin`] that uses `winit` to create and manage windows, and receive window and input
 /// events.
 ///
@@ -795,7 +798,13 @@ pub fn winit_runner(mut app: App) {
                 }
             }
             event::Event::MainEventsCleared => {
-                if runner_state.active.should_run() {
+                let is_paused = PAUSE.load(std::sync::atomic::Ordering::Acquire);
+
+                // if is_paused {
+                //     *control_flow = ControlFlow::Wait;
+                // }
+
+                if runner_state.active.should_run() && !is_paused {
                     if runner_state.active == ActiveState::WillSuspend {
                         runner_state.active = ActiveState::Suspended;
                         #[cfg(target_os = "android")]

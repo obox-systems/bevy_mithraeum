@@ -800,9 +800,9 @@ pub fn winit_runner(mut app: App) {
             event::Event::MainEventsCleared => {
                 let is_paused = PAUSE.load(std::sync::atomic::Ordering::Acquire);
 
-                // if is_paused {
-                //     *control_flow = ControlFlow::Wait;
-                // }
+                if is_paused {
+                    *control_flow = ControlFlow::Wait;
+                }
 
                 if runner_state.active.should_run() && !is_paused {
                     if runner_state.active == ActiveState::WillSuspend {

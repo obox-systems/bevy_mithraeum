@@ -93,7 +93,8 @@ async-channel = "1.8"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "0.3"
-web-sys = { version = "0.3", features = [
+# 0.3.68 breaks wgpu 0.17.2
+web-sys = { version = "=0.3.67", features = [
     'Blob',
     'Document',
     'Element',

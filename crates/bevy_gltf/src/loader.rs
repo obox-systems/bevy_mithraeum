@@ -57,6 +57,7 @@ use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
 };
+use std::sync::{Arc, Mutex};
 use thiserror::Error;
 
 /// An error that occurs when loading a glTF file.
@@ -360,20 +361,27 @@ async fn load_gltf<'a, 'b, 'c>(
     // later in the loader when looking up handles for materials. However this would mean
     // that the material's load context would no longer track those images as dependencies.
     let mut _texture_handles = Vec::new();
+
+    let guarded_context = Arc::new(Mutex::new(load_context));
+    let guarded_handles = Arc::new(Mutex::new(&mut _texture_handles));
+
     if gltf.textures().len() == 1 || cfg!(target_arch = "wasm32") {
-        for texture in gltf.textures().into_par_iter() {
+        use rayon::prelude::*;
+        for f in gltf.textures().par_bridge().map(|texture| async {
             let parent_path = load_context.path().parent().unwrap();
-            let image = load_image(
+            let Ok(image) = load_image(
                 texture,
                 &buffer_data,
                 &linear_textures,
                 parent_path,
                 loader.supported_compressed_formats,
                 settings.load_materials,
-            )
-            .await?;
-            process_loaded_texture(load_context, &mut _texture_handles, image);
-        }
+            ).await else { warn!("Error loading glTF texture"); return };
+
+            let ctx = guarded_context.clone().get_mut().unwrap();
+            let handles = guarded_handles.clone().get_mut().unwrap();
+            process_loaded_texture(*ctx, *handles, image);
+        }).into_par_iter() { f.await }
     } else {
         #[cfg(not(target_arch = "wasm32"))]
         IoTaskPool::get()

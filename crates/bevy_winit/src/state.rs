@@ -388,7 +388,7 @@ impl<T: Event> ApplicationHandler<T> for WinitAppRunnerState<T> {
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         if PAUSE.load(std::sync::atomic::Ordering::Acquire){
-            self.lifecycle = AppLifecycle::Suspend;            
+            self.lifecycle = AppLifecycle::Suspended;            
         }
                                      
         // create any new windows

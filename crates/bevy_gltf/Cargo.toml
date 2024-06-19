@@ -59,7 +59,7 @@ smallvec = "1.11"
 
 rayon = "1.10.0"
 wasm-bindgen-rayon = { version = "1.2", features = ["no-bundler"] }
-futures = { version =  "0.3.30", features = ["executor"] }
+futures = { version =  "0.3.30", default-features = false, features = ["executor"] }
 
 [lints]
 workspace = true

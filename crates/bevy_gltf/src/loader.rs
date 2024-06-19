@@ -382,19 +382,18 @@ async fn load_gltf<'a, 'b, 'c>(
         let buffer_data = &buffer_data;
         let linear_textures = &linear_textures;
 
-        gltf.textures().par_bridge().for_each(|texture| {
-            let image = block_on(load_image(
+        gltf.textures().par_bridge().map(|texture| {
+            block_on(load_image(
                 texture,
                 buffer_data,
                 linear_textures,
                 parent_path,
                 loader.supported_compressed_formats,
                 settings.load_materials,
-            ));
-
-            if let Ok(image) = image {
-                process_loaded_texture(load_context, &mut _texture_handles, image)
-            }
+            ))
+        }).collect::<Vec<_>>().into_iter().for_each(|image| 
+        if let Ok(image) = image {
+            process_loaded_texture(load_context, &mut _texture_handles, image)
         });
     } else {
         #[cfg(not(target_arch = "wasm32"))]

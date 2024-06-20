@@ -40,7 +40,7 @@ use bevy_scene::Scene;
 #[cfg(not(target_arch = "wasm32"))]
 use bevy_tasks::IoTaskPool;
 use bevy_transform::components::Transform;
-use bevy_utils::tracing::{error, info_span, warn};
+use bevy_utils::tracing::{error, info, info_span, warn};
 use bevy_utils::{HashMap, HashSet};
 use gltf::image::Source;
 use gltf::{
@@ -59,6 +59,7 @@ use std::{
     collections::VecDeque,
     path::{Path, PathBuf},
 };
+use rayon::current_thread_index;
 use thiserror::Error;
 
 /// An error that occurs when loading a glTF file.
@@ -383,6 +384,10 @@ async fn load_gltf<'a, 'b, 'c>(
         let linear_textures = &linear_textures;
 
         gltf.textures().par_bridge().map(|texture| {
+            if let Some(idx) = current_thread_index() {
+                info!("Running on thread #{idx}");
+            }
+            
             block_on(load_image(
                 texture,
                 buffer_data,

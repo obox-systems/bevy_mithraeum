@@ -386,10 +386,6 @@ async fn load_gltf<'a, 'b, 'c>(
         let linear_textures = &linear_textures;
 
         gltf.textures().par_bridge().map(|texture| {
-            if let Some(idx) = current_thread_index() {
-                info!("Running on thread #{idx}");
-            }
-            
             block_on(load_image(
                 texture,
                 buffer_data,

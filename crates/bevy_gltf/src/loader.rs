@@ -3,6 +3,8 @@ use crate::{
     GltfMeshExtras, GltfNode, GltfSceneExtras,
 };
 
+pub use wasm_bindgen_rayon::init_thread_pool;
+
 #[cfg(feature = "bevy_animation")]
 use bevy_animation::{AnimationTarget, AnimationTargetId};
 use bevy_asset::{

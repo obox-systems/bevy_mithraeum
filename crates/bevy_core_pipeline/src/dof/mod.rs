@@ -62,9 +62,9 @@ use crate::{
 };
 
 #[cfg(any(feature = "webgpu", not(target_arch = "wasm32")))]
-use bevy_core_pipeline::core_3d::DEPTH_TEXTURE_SAMPLING_SUPPORTED;
+use crate::core_3d::DEPTH_TEXTURE_SAMPLING_SUPPORTED;
 #[cfg(all(feature = "webgl", target_arch = "wasm32", not(feature = "webgpu")))]
-use bevy_core_pipeline::core_3d::DEPTH_TEXTURE_SAMPLING_SUPPORTED;
+use crate::core_3d::DEPTH_TEXTURE_SAMPLING_SUPPORTED;
 
 const DOF_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(2031861180739216043);
 

@@ -382,8 +382,6 @@ async fn load_gltf<'a, 'b, 'c>(
         let buffer_data = &buffer_data;
         let linear_textures = &linear_textures;
 
-        rayon::ThreadPoolBuilder::new().num_threads(6).build_global().unwrap();
-        
         gltf.textures().par_bridge().map(|texture| {
             block_on(load_image(
                 texture,

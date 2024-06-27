@@ -11,6 +11,7 @@ keywords = ["bevy"]
 [features]
 dds = ["bevy_render/dds"]
 pbr_transmission_textures = ["bevy_pbr/pbr_transmission_textures"]
+rayon = ["dep:rayon", "dep:wasm-bindgen-rayon", "dep:futures"]
 pbr_multi_layer_material_textures = []
 
 [dependencies]

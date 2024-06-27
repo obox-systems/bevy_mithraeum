@@ -377,57 +377,94 @@ async fn load_gltf<'a, 'b, 'c>(
     // that the material's load context would no longer track those images as dependencies.
     let mut _texture_handles = Vec::new();
 
-    if gltf.textures().len() == 1 || cfg!(target_arch = "wasm32") {
-        use rayon::prelude::*;
-        use futures::executor::block_on;
+    #[cfg(feature = "rayon")]
+    {
+        if gltf.textures().len() == 1 {
+            for texture in gltf.textures() {
+                let parent_path = load_context.path().parent().unwrap();
+                let image = load_image(
+                    texture,
+                    &buffer_data,
+                    &linear_textures,
+                    parent_path,
+                    loader.supported_compressed_formats,
+                    settings.load_materials,
+                )
+                    .await?;
+                process_loaded_texture(load_context, &mut _texture_handles, image);
+            }
+        } else {
+            use rayon::prelude::*;
+            use futures::executor::block_on;
 
-        let parent_path = load_context.path().parent().unwrap();
-        let buffer_data = &buffer_data;
-        let linear_textures = &linear_textures;
+            let parent_path = load_context.path().parent().unwrap();
+            let buffer_data = &buffer_data;
+            let linear_textures = &linear_textures;
 
-        gltf.textures().par_bridge().map(|texture| {
-            block_on(load_image(
-                texture,
-                buffer_data,
-                linear_textures,
-                parent_path,
-                loader.supported_compressed_formats,
-                settings.load_materials,
-            ))
-        }).collect::<Vec<_>>().into_iter().for_each(|image| 
-        if let Ok(image) = image {
-            process_loaded_texture(load_context, &mut _texture_handles, image)
-        });
-    } else {
-        #[cfg(not(target_arch = "wasm32"))]
-        IoTaskPool::get()
-            .scope(|scope| {
-                gltf.textures().for_each(|gltf_texture| {
-                    let parent_path = load_context.path().parent().unwrap();
-                    let linear_textures = &linear_textures;
-                    let buffer_data = &buffer_data;
-                    scope.spawn(async move {
-                        load_image(
-                            gltf_texture,
-                            buffer_data,
-                            linear_textures,
-                            parent_path,
-                            loader.supported_compressed_formats,
-                            settings.load_materials,
-                        )
-                        .await
-                    });
-                });
-            })
-            .into_iter()
-            .for_each(|result| match result {
-                Ok(image) => {
-                    process_loaded_texture(load_context, &mut _texture_handles, image);
-                }
-                Err(err) => {
-                    warn!("Error loading glTF texture: {}", err);
-                }
+            gltf.textures().par_bridge().map(|texture| {
+                block_on(load_image(
+                    texture,
+                    buffer_data,
+                    linear_textures,
+                    parent_path,
+                    loader.supported_compressed_formats,
+                    settings.load_materials,
+                ))
+            }).collect::<Vec<_>>().into_iter().for_each(|image|
+            if let Ok(image) = image {
+                process_loaded_texture(load_context, &mut _texture_handles, image)
             });
+        }
+    }
+
+
+    #[cfg(not(feature = "rayon"))]
+    {
+        if gltf.textures().len() == 1 || cfg!(target_arch = "wasm32") {
+            for texture in gltf.textures() {
+                let parent_path = load_context.path().parent().unwrap();
+                let image = load_image(
+                    texture,
+                    &buffer_data,
+                    &linear_textures,
+                    parent_path,
+                    loader.supported_compressed_formats,
+                    settings.load_materials,
+                )
+                    .await?;
+                process_loaded_texture(load_context, &mut _texture_handles, image);
+            }
+        } else {
+            #[cfg(not(target_arch = "wasm32"))]
+            IoTaskPool::get()
+                .scope(|scope| {
+                    gltf.textures().for_each(|gltf_texture| {
+                        let parent_path = load_context.path().parent().unwrap();
+                        let linear_textures = &linear_textures;
+                        let buffer_data = &buffer_data;
+                        scope.spawn(async move {
+                            load_image(
+                                gltf_texture,
+                                buffer_data,
+                                linear_textures,
+                                parent_path,
+                                loader.supported_compressed_formats,
+                                settings.load_materials,
+                            )
+                                .await
+                        });
+                    });
+                })
+                .into_iter()
+                .for_each(|result| match result {
+                    Ok(image) => {
+                        process_loaded_texture(load_context, &mut _texture_handles, image);
+                    }
+                    Err(err) => {
+                        warn!("Error loading glTF texture: {}", err);
+                    }
+                });
+        }
     }
 
     let mut materials = vec![];

@@ -84,9 +84,6 @@ default = [
 # Force dynamic linking, which improves iterative compile times
 dynamic_linking = ["dep:bevy_dylib", "bevy_internal/dynamic_linking"]
 
-# For using rayon to decode GLTF textures in parallel
-rayon = ["bevy_gltf/rayon"]
-
 # Enables system information diagnostic plugin
 sysinfo_plugin = ["bevy_internal/sysinfo_plugin"]
 
